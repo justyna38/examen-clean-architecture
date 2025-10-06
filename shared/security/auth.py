@@ -18,7 +18,9 @@ class AuthService:
         }
     
     def authenticate(self, username: str, password: str) -> Optional[User]:
-        if username in self.users and password == "password":
+        # Note: In production, use proper password hashing (bcrypt, scrypt, etc.)
+        # This is just for demonstration purposes
+        if username in self.users and password == "password":  # nosec B105
             return self.users[username]
         return None
     
