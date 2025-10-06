@@ -1,0 +1,89 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  workflow_dispatch:  # Permet le déploiement manuel
+
+jobs:
+  deploy-staging:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: staging
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run tests before deployment
+      run: |
+        pytest shared/tests/ -v
+    
+    - name: Build Docker images
+      run: |
+        docker build -t mdm-pim:staging .
+        docker build -t mdm-dam:staging .
+        docker build -t mdm-core:staging .
+    
+    - name: Deploy to staging
+      run: |
+        echo "Deploying to staging environment..."
+        # Ici tu peux ajouter tes commandes de déploiement
+        # docker-compose -f docker-compose.staging.yml up -d
+    
+    - name: Run smoke tests
+      run: |
+        echo "Running smoke tests..."
+        # Tests de base pour vérifier que l'application fonctionne
+
+  deploy-production:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    environment: production
+    needs: deploy-staging
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run full test suite
+      run: |
+        pytest shared/tests/ -v --cov=pim --cov=dam --cov=mdm_core
+    
+    - name: Build production Docker images
+      run: |
+        docker build -t mdm-pim:${{ github.ref_name }} .
+        docker build -t mdm-dam:${{ github.ref_name }} .
+        docker build -t mdm-core:${{ github.ref_name }} .
+    
+    - name: Deploy to production
+      run: |
+        echo "Deploying version ${{ github.ref_name }} to production..."
+        # Ici tu peux ajouter tes commandes de déploiement production
+        # docker-compose -f docker-compose.prod.yml up -d
+    
+    - name: Run production health checks
+      run: |
+        echo "Running production health checks..."
+        # Vérifications que l'application fonctionne en production

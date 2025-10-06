@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  pim-service:
+    build: .
+    ports:
+      - "8001:8000"
+    environment:
+      - SERVICE_NAME=pim
+    volumes:
+      - ./storage:/app/storage
+
+  dam-service:
+    build: .
+    ports:
+      - "8002:8000"
+    environment:
+      - SERVICE_NAME=dam
+    volumes:
+      - ./storage:/app/storage
+
+  mdm-core:
+    build: .
+    ports:
+      - "8003:8000"
+    environment:
+      - SERVICE_NAME=mdm
+    depends_on:
+      - pim-service
+      - dam-service
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - pim-service
+      - dam-service
+      - mdm-core
