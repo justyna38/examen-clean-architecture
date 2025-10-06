@@ -9,6 +9,9 @@ class CreateProductUseCase:
         self.typology_repository = typology_repository
     
     def execute(self, ean: str, name: str, typology_name: str, attributes: Dict[str, Any]) -> Product:
+        if len(ean) < 8:
+            raise ValueError("EAN must be at least 8 characters")
+        
         typology = self.typology_repository.get_by_name(typology_name)
         
         for field in typology.fields:
